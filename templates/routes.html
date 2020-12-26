@@ -6,6 +6,7 @@
               <th scope="col">Name</th>
               <th scope="col">distance</th>
               <th scope="col">elevation gain</th>
+              <th scope="col"></th>
             </tr>
           </thead>
           <tbody>
@@ -14,6 +15,16 @@
               <td>{{ route.name }}</td>
               <td>{{ (0.001*route.distance) | round(2) }} km</td>
               <td>{{ route.elevation_gain | round(1) }} m</td>
+              <td>
+                  {{ (route.analysis.total_time_estimate_s / 3600.0) | round(2)}} hr
+                  {{ (route.estimated_moving_time / 3600.0) | round(2)}} hr
+              </td>
+              <td>
+                  <ul>
+                  {% for mode, mode_s in route.analysis.modes.items() %}
+                  <li>{{ mode }}: {{ mode_s.time_fraction_pc | int }} %</li>
+                  {% endfor %}
+                  </ul>
             </tr>
           {% endfor %}
           </tbody>
