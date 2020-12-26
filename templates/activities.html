@@ -1,0 +1,21 @@
+{% extends "layout.html" %} 
+{% block content %}
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">distance</th>
+              <th scope="col">elevation gain</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for route in routes %}
+            <tr>
+              <td>{{ route.name }}</td>
+              <td>{{ (route.distance/1000.) | round(1) }} km</td>
+              <td>{{ route.elevation_gain }} VAM</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+{% endblock content %}
