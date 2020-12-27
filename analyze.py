@@ -194,6 +194,9 @@ def analyze_route(route, plot=False, onlycache=False):
 
 
 def pngbar(fractions):
+    if fractions in cache:
+        return cache[fractions]
+
     width = 250
     height = 25
     img = []
@@ -218,4 +221,6 @@ def pngbar(fractions):
     f = io.BytesIO()
     w = png.Writer(width, height, greyscale=False)
     w.write(f, img)
-    return f.getvalue()
+
+    cache[fractions] = f.getvalue()
+    return cache[fractions]
