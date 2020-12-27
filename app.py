@@ -5,8 +5,21 @@ from urllib.parse import urlencode
 import io
 import gpxpy
 import analyze
+import logging
+
 
 import requests_cache
+
+import time
+import bravado
+import bravado.client
+import bravado.requests_client
+import bravado.http_client
+from bravado.requests_client import RequestsClient
+from bravado.client import SwaggerClient
+
+logger = logging.getLogger()
+logging.basicConfig(level=logging.DEBUG)
 
 requests_cache.install_cache('appcache')
 
@@ -19,21 +32,18 @@ app.config.update(
 )
 
 def get_request_token():
-    return request.cookies.get('strava_token', None)
+    token = request.cookies.get('strava_token', None)
+    if token is None:
+        logger.warning("no token")
+        raise UnauthorizedError()
+
+    return token
     
 def get_athlete():
     token = get_request_token()
     return requests.get("https://www.strava.com/api/v3/athlete", headers={"Authorization": f"Bearer {token}"}).json()
 
 def get_swagger(token):
-    import time
-    import bravado
-    import bravado.client
-    import bravado.requests_client
-    import bravado.http_client
-    from bravado.requests_client import RequestsClient
-    from bravado.client import SwaggerClient
-
     http_client = RequestsClient()
     http_client.set_api_key(
                 'www.strava.com', 'Bearer '+token,
@@ -99,7 +109,8 @@ def routes():
             ).json() if r['type'] != 1]
 
     for route in routes:
-        fetch_route_gpx(route)
+        if not analyze.analyze_route(route, onlycache=True):
+            fetch_route_gpx(route)
         analyze.analyze_route(route)
 
     return render_template("routes.html", user_name=athlete['firstname'], routes=routes)
@@ -111,7 +122,8 @@ def auth():
                 response_type="code",
                 redirect_uri="http://trail.volodymyrsavchenko.com:8000/exchange_token",
                 approval_prompt="force",
-                scope="activity:read_all",
+                scope="activity:read",
+                #scope="activity:read_all",
           ))
 
     return render_template("auth.html", auth_url=auth_url)
@@ -132,16 +144,23 @@ def exchange_token():
               )
 
     if r.status_code != 200:
+        logger.warning("oauth did not return: %s", r.text)
         return redirect(url_for("auth"))
 
     token=r.json()['access_token']
 
-    athlete = get_athlete()
-
-    print(athlete)
-
-    r = jsonify(athlete)
-
+    r = redirect(url_for("root"))
     r.set_cookie('strava_token', token, max_age=60*60)
 
     return r
+
+@app.route('/images/bar/<fractions>')
+def get_image(fractions):
+    image_binary = analyze.pngbar(list(map(float, fractions.split(","))))
+    response = make_response(image_binary)
+    response.headers.set('Content-Type', 'image/png')
+ #   response.headers.set(
+ #       'Content-Disposition', 'attachment', filename='some.png' 
+ #   )
+    return response
+

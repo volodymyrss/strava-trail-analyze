@@ -3,6 +3,11 @@ import matplotlib as mpl
 mpl.use('agg')
 import matplotlib.pylab as plt
 import matplotlib.cm as cm
+import png
+import io
+
+import diskcache as dc
+cache = dc.Cache('tmp-cache')
 
 def d_(x, n=10):
     d_filter = np.zeros(n)
@@ -58,7 +63,14 @@ def speed_estim_for_grade(grade, lut_speed_grade, peak=(0.1, 0.9), plot=False):
     #lut_speed_grade[2][i_grade], grade, lut_speed_grade[0][i_grade]
     
 
-def analyze_route(route, plot=False):
+def analyze_route(route, plot=False, onlycache=False):
+    cache_key = (route["name"], "v0")
+    if cache_key in cache:
+        route['analysis'] = cache[cache_key]
+        return True
+    if onlycache:
+        return False
+
     lut_merged = np.load(open("lut_merged.npy", "rb"), allow_pickle=True)
     d_N = 2
     N = 3
@@ -139,12 +151,12 @@ def analyze_route(route, plot=False):
 
     summary['modes'] = {}
 
-    for n, mx in [
-        ("down steep", m_route_run_steep),
+    for i, (n, mx) in enumerate([
         ("run flat", m_route_run_flat),
         ("walk up", m_route_walk),
         ("steep up", m_route_steep),
-    ]:        
+        ("down steep", m_route_run_steep),
+    ]):        
         print(f"{n:10s} "+
               f"\033[032m{np.sum(d_time_estims[mx])/np.sum(d_time_estims)*100:5.1f}%\033[0m time " +
               f"{np.sum(d_time_estims[mx])/3600.:.2f} hr " +
@@ -157,6 +169,9 @@ def analyze_route(route, plot=False):
         rm['time_s'] = np.sum(d_time_estims[mx])
         rm['distance_m'] = np.sum(d_route_d3[mx])/1000.
         rm['elevation_gain_m'] = np.sum(d_(route_altitude, N)[mx])/(N-1)
+        rm['order'] = i
+
+    summary['modes_string'] = ",".join([ "%.5lg"%m['time_fraction_pc'] for n, m in sorted(summary['modes'].items(), key=lambda x:x[1]['order'])])
         
         
     if False:
@@ -172,8 +187,35 @@ def analyze_route(route, plot=False):
         plt.grid()
         
     
+    cache[cache_key] = route['analysis']
     
+    return True
     
 
 
+def pngbar(fractions):
+    width = 250
+    height = 25
+    img = []
 
+    print(fractions)
+    fractions = np.concatenate([[0],np.cumsum([ f/np.sum(fractions) for f in fractions])])
+    print(fractions)
+
+    row = ()
+    for x in range(width):
+        a = fractions - x/width
+        a[a < 0] = 1
+        i = np.argmin(a)
+        px = tuple([int(c*255) for c in cm.jet(i/len(fractions))[:-1]])
+        row = row + px
+
+    #print(row)
+
+    for y in range(height):
+        img.append(row)
+
+    f = io.BytesIO()
+    w = png.Writer(width, height, greyscale=False)
+    w.write(f, img)
+    return f.getvalue()

@@ -3,10 +3,11 @@
         <table class="table table-striped">
           <thead>
             <tr>
-              <th scope="col">Name</th>
+              <th scope="col">name</th>
               <th scope="col">distance</th>
               <th scope="col">elevation gain</th>
-              <th scope="col"></th>
+              <th scope="col">estimated time</th>
+              <th scope="col">composition</th>
             </tr>
           </thead>
           <tbody>
@@ -17,9 +18,10 @@
               <td>{{ route.elevation_gain | round(1) }} m</td>
               <td>
                   {{ (route.analysis.total_time_estimate_s / 3600.0) | round(2)}} hr
-                  {{ (route.estimated_moving_time / 3600.0) | round(2)}} hr
+                  <i>({{ (route.estimated_moving_time / 3600.0) | round(2)}} hr)</i>
               </td>
               <td>
+                  <a  data-toggle="tooltip" title="Hooray!"><img src="/images/bar/{{ route.analysis.modes_string }}"></img></a>
                   <ul>
                   {% for mode, mode_s in route.analysis.modes.items() %}
                   <li>{{ mode }}: {{ mode_s.time_fraction_pc | int }} %</li>
