@@ -41,13 +41,16 @@ spec:
             httpGet:
               path: /auth
               port: http
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            failureThreshold: 10
+            initialDelaySeconds: 15
+            periodSeconds: 60
+            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /auth
               port: http
+            initialDelaySeconds: 15
+            periodSeconds: 60
+            failureThreshold: 3
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
 

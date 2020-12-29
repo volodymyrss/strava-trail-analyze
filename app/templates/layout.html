@@ -10,7 +10,12 @@
       </style>
     </head>
     <body>
-        Hello {{ user_name }}. Your <a href="/routes">routes</a>, <a href="/activities">activities</a>. <a href="/clear-cache">Clear</a>
+        <div class="container">
+        <a href="/routes"><button type="button" class="btn btn-primary btn-lg">{{ user_name }}</button></a>
+        <a href="/routes"><button type="button" class="btn btn-primary btn-lg">routes</button></a>
+        <a href="/activities"><button type="button" class="btn btn-secondary btn-lg">activities</button></a>
+        <a href="/clear-cache"><button type="button" class="btn btn-danger btn-lg">Clear</button></a>
+        </div>
 
         {% with messages = get_flashed_messages() %}
         {% if messages %}
