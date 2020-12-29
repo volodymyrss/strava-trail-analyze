@@ -4,7 +4,11 @@ build:
 	docker build . -t $(IMAGE)
 
 run: build
-	docker run --user 1000:1000 -v $(PWD)/strava-client.yaml:/strava-client.yaml:ro -it -p8000:8000 $(IMAGE)
+	docker run \
+	    --user 1000:1000 \
+	    -v $(PWD)/strava-client.yaml:/strava-client.yaml:ro \
+	    -e OAUTH_REDIRECT=http://trail.volodymyrsavchenko.com:8000/exchange_token \
+	    -it -p8000:8000 $(IMAGE)
 
 push: build
 	docker push $(IMAGE)

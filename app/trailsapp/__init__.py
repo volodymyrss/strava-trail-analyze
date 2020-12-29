@@ -1,6 +1,6 @@
 import yaml
 import requests
-from flask import Flask, jsonify, request, render_template, redirect, make_response, url_for
+from flask import Flask, jsonify, request, render_template, redirect, make_response, url_for, flash
 from urllib.parse import urlencode
 import os
 import io
@@ -177,6 +177,8 @@ def exchange_token():
     code = request.args.get("code")
 
     conf = read_conf()
+        
+    logger.warning("requested to exchange token")
     
     r=requests.post("https://www.strava.com/api/v3/oauth/token",
               data=dict(
@@ -195,8 +197,10 @@ def exchange_token():
 
     athlete = get_athlete(token=token)
 
-    if athlete['id'] not in []:
-        return redirect(url_for("auth"), 302, f"Sorry {athlete['firstname']}, we can not let you in here")
+    if athlete['id'] not in [31879825,]:
+        logger.warning(f"Sorry {athlete['firstname']} {athlete['id']}, not allowed in")
+        #flash("Sorry {athlete['firstname']}, we can not let you in here")
+        return redirect(url_for("auth"))
 
     r = redirect(url_for("root"))
     r.set_cookie('strava_token', token, max_age=60*60)
