@@ -57,8 +57,9 @@ spec:
               name: strava-client
               readOnly: true
 
-          env: FLASK_SECRET_KEY
-            - valueFrom:
+          env: 
+            - name: FLASK_SECRET_KEY
+              valueFrom:
                 secretKeyRef:
                   name: flask-secret-key
                   key: flask-secret-key

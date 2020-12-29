@@ -61,10 +61,10 @@ def get_swagger(token=None):
                     http_client=http_client,
                         config={
                                     'validate_swagger_spec': False,
-                                            'validate_responses': False,
-                                                    'validate_requests': False,
-                                                        },
-                        )
+                                    'validate_responses': False,
+                                    'validate_requests': False,
+                        },
+                    )
     athlete = client.Athletes.getLoggedInAthlete().response().result
     athlete
 
@@ -222,3 +222,4 @@ def get_image(fractions):
 @app.route("/clear-cache")
 def clear_cache():
     requests_cache.clear()
+    return redirect(url_for("root"))
