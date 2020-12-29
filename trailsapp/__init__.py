@@ -4,7 +4,7 @@ from flask import Flask, jsonify, request, render_template, redirect, make_respo
 from urllib.parse import urlencode
 import io
 import gpxpy
-import analyze
+import trailsapp.analyze as analyze
 import logging
 
 
