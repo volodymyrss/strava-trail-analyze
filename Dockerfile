@@ -2,4 +2,10 @@ FROM python:3.8
 ADD requirements.txt /requirements.txt
 RUN pip install -r requirements.txt
 
-ENTRYPOINT gunicorn app:app -b 0.0.0.0:8000 --log-level debug
+ADD trailsapp /trailsapp
+RUN pip install /trailsapp
+
+# default model
+ADD lut_merged.npy /lut_merged.npy
+
+ENTRYPOINT gunicorn trailsapp:app -b 0.0.0.0:8000 --log-level debug
