@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO)
 
 requests_cache.install_cache('appcache')
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="/templates")
 
 app.config.update(
     SESSION_COOKIE_SECURE=True,
@@ -70,7 +70,10 @@ def get_swagger(token=None):
     return client
 
 def read_conf():
-    return yaml.safe_load(open("strava-client.yaml"))
+    try:
+        return yaml.safe_load(open("strava-client.yaml"))
+    except IOError:
+        return yaml.safe_load(open("/strava-client.yaml"))
 
 
 #@app.errorhandler(Exception)
