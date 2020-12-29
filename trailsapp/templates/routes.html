@@ -19,7 +19,6 @@
               <td>{{ route.elevation_gain | round(1) }}&nbsp;m</td>
               <td>
                   {{ (route.analysis.total_time_estimate_s / 3600.0) | round(2)}}&nbsp;hr&nbsp;<i style="color:#a0a0a0">({{ (route.estimated_moving_time / 3600.0) | round(2)}}&nbsp;hr)</i>
-                  {{ (route.analysis.total_time_alt_estimate_s / 3600.0) | round(2)}}
               </td>
               <td>
                   {{ (route.analysis.total_time_estimate_s / 3600.0 * 700.0) | round(2)}}
@@ -33,7 +32,10 @@
     <td>{{ mode }}</td>
     <td> {{ mode_s.time_fraction_pc | int }}&nbsp;% </td>
     <td> {{ mode_s.vam | int }}&nbsp;VAM </td>
-    <td> {{ mode_s.kmh | round(2) }}&nbsp;km/h </td>
+    <td> {{ mode_s.elevation_gain_m | int }}&nbsp;m </td>
+    <td> {{ mode_s.kmh | round(1) }}&nbsp;km/h </td>
+    <td> {{ (mode_s.distance_m/1000.0) | round(2)}}&nbsp;km </td>
+    <td> {{ (mode_s.grade_av) | int }}&nbsp;% </td>
 </tr>
 {% endfor %}
 </table>

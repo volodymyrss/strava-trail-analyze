@@ -141,6 +141,7 @@ def analyze_route(route, plot=False, onlycache=False):
     print(f"total distance {np.sum(d_route_d3)/1000.:.2f} km (strava {route['distance']/1000.:.2f})")
     
     asc = d_(route_altitude, 2)
+    asc[asc<0] = 0
     
     summary = {} 
     route['analysis'] = summary
@@ -182,9 +183,12 @@ def analyze_route(route, plot=False, onlycache=False):
         rm['time_fraction_pc'] = np.sum(d_time_estims[mx])/np.sum(d_time_estims)*100
         rm['time_s'] = np.sum(d_time_estims[mx])
         rm['distance_m'] = np.sum(d_route_d3[mx])
-        rm['elevation_gain_m'] = np.sum(d_(route_altitude, N)[mx])/(N-1)
+        rm['elevation_gain_m'] = np.sum(asc[mx])
         rm['vam'] = rm['elevation_gain_m']/rm['time_s']*3600.
         rm['kmh'] = rm['distance_m']/rm['time_s']*3600./1000.
+        rm['grade_av'] = 100*(rm['elevation_gain_m'] / rm['distance_m'])
+        rm['grade_min'] = np.nanmin(route_grade[mx]) if np.sum(mx)>0 else 0
+        rm['grade_max'] = np.nanmax(route_grade[mx]) if np.sum(mx)>0 else 0
         rm['order'] = i
 
     summary['modes_string'] = ",".join([ "%.5lg"%m['time_fraction_pc'] for n, m in sorted(summary['modes'].items(), key=lambda x:x[1]['order'])])
