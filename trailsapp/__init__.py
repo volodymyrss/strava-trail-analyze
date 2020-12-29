@@ -19,7 +19,7 @@ from bravado.requests_client import RequestsClient
 from bravado.client import SwaggerClient
 
 logger = logging.getLogger()
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 requests_cache.install_cache('appcache')
 
@@ -43,7 +43,10 @@ def get_athlete():
     token = get_request_token()
     return requests.get("https://www.strava.com/api/v3/athlete", headers={"Authorization": f"Bearer {token}"}).json()
 
-def get_swagger(token):
+def get_swagger(token=None):
+    if token is None:
+        token = get_request_token()
+
     http_client = RequestsClient()
     http_client.set_api_key(
                 'www.strava.com', 'Bearer '+token,
@@ -61,6 +64,8 @@ def get_swagger(token):
                         )
     athlete = client.Athletes.getLoggedInAthlete().response().result
     athlete
+
+    return client
 
 def read_conf():
     return yaml.safe_load(open("strava-client.yaml"))
@@ -82,6 +87,19 @@ def root():
     athlete = get_athlete()
     return render_template("index.html", user_name=athlete['firstname'])
 
+        
+    
+def fetch_activity_streams(activity):
+    client = get_swagger()
+
+    activity['streams'] = client.Streams.getActivityStreams(
+        id=activity['id'], 
+        keys="time, distance, latlng, altitude, velocity_smooth, heartrate, cadence, watts, temp, moving, grade_smooth".split(", "),
+        key_by_type=True,
+        ).response().result
+
+
+    print(activity['name'])
 
 def fetch_route_gpx(route):
     print("getting route gpx for", route['id'])
@@ -114,6 +132,27 @@ def routes():
         analyze.analyze_route(route)
 
     return render_template("routes.html", user_name=athlete['firstname'], routes=routes)
+
+@app.route("/activities")
+def activities():
+    token = get_request_token()
+
+    athlete = get_athlete()
+
+    activities = requests.get("https://www.strava.com/api/v3/athlete/activities", 
+            params=dict(
+                per_page=100
+                ),
+            headers={'Authorization': 'Bearer '+token}
+            ).json()
+
+    activities = [ activity for activity in activities if activity['type'] != "Ride" ]
+
+    for activity in activities:
+        fetch_activity_streams(activity)
+        analyze.analyze_activity(activity, analyze.load_model("v0"))
+
+    return render_template("activities.html", user_name=athlete['firstname'], activities=activities)
  
 @app.route("/auth")
 def auth():

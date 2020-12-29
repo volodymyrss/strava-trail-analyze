@@ -1,0 +1,4 @@
+*.sqlite
+*.gpg
+strava-client.yaml
+__pycache__

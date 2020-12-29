@@ -3,18 +3,24 @@
         <table class="table table-striped">
           <thead>
             <tr>
-              <th scope="col">Name</th>
-              <th scope="col">distance</th>
-              <th scope="col">elevation gain</th>
+              <th scope="col">name</th>
+              <th scope="col">type</th>
+              <th scope="col">global model estimate</th>
+              <th scope="col">case model estimate</th>
+              <th scope="col">actual</th>
             </tr>
           </thead>
           <tbody>
-          {% for route in routes %}
+          {% for activity in activities %}
+            {% if activity.analysis %}
             <tr>
-              <td>{{ route.name }}</td>
-              <td>{{ (route.distance/1000.) | round(1) }} km</td>
-              <td>{{ route.elevation_gain }} VAM</td>
+              <td>{{ activity.name }}</td>
+              <td>{{ activity.type }}</td>
+              <td>{{ (activity.analysis.total_time_model_estimate_s/3600.0) | round(2) }}</td>
+              <td>{{ (activity.analysis.total_time_estimate_s/3600.0) | round(2) }} </td>
+              <td>{{ (activity.analysis.summed_time_s/3600.0) | round(2) }}</td>
             </tr>
+            {% endif %}
           {% endfor %}
           </tbody>
         </table>
