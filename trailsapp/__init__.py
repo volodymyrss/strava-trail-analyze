@@ -40,8 +40,9 @@ def get_request_token():
 
     return token
     
-def get_athlete():
-    token = get_request_token()
+def get_athlete(token=None):
+    if token is None:
+        token = get_request_token()
     return requests.get("https://www.strava.com/api/v3/athlete", headers={"Authorization": f"Bearer {token}"}).json()
 
 def get_swagger(token=None):
@@ -188,6 +189,11 @@ def exchange_token():
         return redirect(url_for("auth"))
 
     token=r.json()['access_token']
+
+    athlete = get_athlete(token=token)
+
+    if athlete['id'] not in []:
+        return redirect(url_for("auth"), 302, f"Sorry {athlete['firstname']}, we can not let you in here")
 
     r = redirect(url_for("root"))
     r.set_cookie('strava_token', token, max_age=60*60)

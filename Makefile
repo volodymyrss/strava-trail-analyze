@@ -4,7 +4,7 @@ build:
 	docker build . -t $(IMAGE)
 
 run: build
-	docker run -it -p8000:80 $(IMAGE)
+	docker run -v strava-client.yaml /strava-client.yaml -it -p8000:80 $(IMAGE)
 
 push: build
 	docker push $(IMAGE)
