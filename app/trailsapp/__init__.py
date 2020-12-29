@@ -25,6 +25,7 @@ logging.basicConfig(level=logging.INFO)
 requests_cache.install_cache('appcache')
 
 app = Flask(__name__, template_folder="/templates")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY")
 
 app.config.update(
     SESSION_COOKIE_SECURE=True,
@@ -217,3 +218,7 @@ def get_image(fractions):
  #   )
     return response
 
+
+@app.route("/clear-cache")
+def clear_cache():
+    requests_cache.clear()
