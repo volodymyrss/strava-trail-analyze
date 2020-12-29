@@ -159,7 +159,7 @@ def auth():
     auth_url = "http://www.strava.com/oauth/authorize?" + urlencode(dict(
                 client_id=read_conf()['client_id'],
                 response_type="code",
-                redirect_uri="http://trail.volodymyrsavchenko.com:8000/exchange_token",
+                redirect_uri="https://trail.app.volodymyrsavchenko.com/exchange_token",
                 approval_prompt="force",
                 scope="activity:read",
                 #scope="activity:read_all",

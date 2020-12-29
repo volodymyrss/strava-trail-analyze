@@ -47,6 +47,19 @@ spec:
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+
+          volumeMounts:
+            - mountPath: "/strava-client.yaml"
+              subPath: strava-client.yaml
+              name: strava-client
+              readOnly: true
+
+      volumes:
+        - name: strava-client
+          secret:
+            secretName: strava-client
+
+
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
