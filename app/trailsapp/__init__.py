@@ -226,3 +226,9 @@ def clear_cache():
     requests_cache.clear()
     flash("cache cleared!")
     return redirect(url_for("root"))
+
+@app.route("/logout")
+def logout():
+    r = redirect(url_for("root"))
+    r.delete_cookie('strava_token')
+    return redirect(url_for("root"))
