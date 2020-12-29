@@ -11,8 +11,14 @@
     </head>
     <body>
         <div class="container">
-        <a href="/routes"><button type="button" class="btn btn-primary btn-lg">{{ user_name }}</button></a>
-        <a href="/routes"><button type="button" class="btn btn-primary btn-lg">routes</button></a>
+        <a href="/logout"><button type="button" class="btn btn-primary btn-lg">
+        {% if user_name %}
+        {{ user_name }}
+        {% else %}
+        Not in!
+        {% endif %}
+        </button></a>
+        <a href="/routes"><button type="button" class="btn btn-success btn-lg">routes</button></a>
         <a href="/activities"><button type="button" class="btn btn-secondary btn-lg">activities</button></a>
         <a href="/clear-cache"><button type="button" class="btn btn-danger btn-lg">Clear</button></a>
         </div>
