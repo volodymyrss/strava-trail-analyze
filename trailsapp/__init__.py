@@ -2,6 +2,7 @@ import yaml
 import requests
 from flask import Flask, jsonify, request, render_template, redirect, make_response, url_for
 from urllib.parse import urlencode
+import os
 import io
 import gpxpy
 import trailsapp.analyze as analyze
@@ -159,7 +160,7 @@ def auth():
     auth_url = "http://www.strava.com/oauth/authorize?" + urlencode(dict(
                 client_id=read_conf()['client_id'],
                 response_type="code",
-                redirect_uri="https://trail.app.volodymyrsavchenko.com/exchange_token",
+                redirect_uri=os.environ.get("OAUTH_REDIRECT", "https://trail.app.volodymyrsavchenko.com/exchange_token"),
                 approval_prompt="force",
                 scope="activity:read",
                 #scope="activity:read_all",
