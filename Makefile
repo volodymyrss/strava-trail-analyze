@@ -8,6 +8,7 @@ run: build
 	    --user 1000:1000 \
 	    -v $(PWD)/strava-client.yaml:/strava-client.yaml:ro \
 	    -e OAUTH_REDIRECT=http://trail.volodymyrsavchenko.com:8000/exchange_token \
+	    -e FLASK_SECRET_KEY=$(shell openssl rand -base64 32) \
 	    -it -p8000:8000 $(IMAGE)
 
 push: build

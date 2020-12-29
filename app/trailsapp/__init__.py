@@ -25,7 +25,7 @@ logging.basicConfig(level=logging.INFO)
 requests_cache.install_cache('appcache')
 
 app = Flask(__name__, template_folder="/templates")
-app.secret_key = os.environ.get("FLASK_SECRET_KEY")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY").encode()
 
 app.config.update(
     SESSION_COOKIE_SECURE=True,
@@ -198,9 +198,11 @@ def exchange_token():
 
     athlete = get_athlete(token=token)
 
+    logger.info("found athelete", athlete)
+
     if athlete['id'] not in [31879825,]:
         logger.warning(f"Sorry {athlete['firstname']} {athlete['id']}, not allowed in")
-        #flash("Sorry {athlete['firstname']}, we can not let you in here")
+        flash("Sorry {athlete['firstname']}, we can not let you in here")
         return redirect(url_for("auth"))
 
     r = redirect(url_for("root"))
@@ -222,4 +224,5 @@ def get_image(fractions):
 @app.route("/clear-cache")
 def clear_cache():
     requests_cache.clear()
+    flash("cache cleared!")
     return redirect(url_for("root"))
