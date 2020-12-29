@@ -2,3 +2,4 @@
 *.gpg
 strava-client.yaml
 __pycache__
+tmp-cache
