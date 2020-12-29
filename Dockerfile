@@ -8,4 +8,4 @@ RUN pip install /trailsapp
 # default model
 ADD lut_merged.npy /lut_merged.npy
 
-ENTRYPOINT gunicorn trailsapp:app -b 0.0.0.0:8000 --log-level debug
+ENTRYPOINT gunicorn trailsapp:app -b 0.0.0.0:80 --log-level debug
