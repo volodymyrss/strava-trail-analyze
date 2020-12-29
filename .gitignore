@@ -3,3 +3,6 @@
 strava-client.yaml
 __pycache__
 tmp-cache
+*.egg-info
+dist
+build
