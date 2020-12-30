@@ -6,6 +6,7 @@ import matplotlib.cm as cm
 import png
 import io
 import base64
+import traceback
 
 import diskcache as dc
 cache = dc.Cache('tmp-cache')
@@ -271,18 +272,24 @@ def analyze_activity(activity, lut_merged=None, onlycache=False):
     streams = activity['streams']
     
     
-    distance = np.array(streams['distance']['data'])
-    altitude = np.array(streams['altitude']['data'])
-    ttime = np.array(streams['time']['data'])
-    latlng = np.array(streams['latlng']['data'])
 
+    try:
+        distance = np.array(streams['distance']['data'])
+        altitude = np.array(streams['altitude']['data'])
+        ttime = np.array(streams['time']['data'])
+        latlng = np.array(streams['latlng']['data'])
+    except Exception as e:
+        print("\033[31mno good data!\033[0m", e)
+        traceback.print_exc()
+        return
+    
+    cadence = None
+    heartrate = None
     try:
         cadence = np.array(streams['cadence']['data'])*2.
         heartrate = np.array(streams['heartrate']['data'])
-    except:
-        print("\033[31mno cadence and heart rate!\033[0m")
-        return
-    
+    except Exception as e:
+        print("\033[31mno optional data!\033[0m", e)
     
     d_distance = d_(distance, d_N)
     d_altitude = d_(altitude, d_N)
@@ -299,7 +306,8 @@ def analyze_activity(activity, lut_merged=None, onlycache=False):
         print("found step", mn)
         x += np.random.rand(altitude.shape[0])*mn - mn/2.
         
-    dealias(cadence)
+    if cadence is not None:
+        dealias(cadence)
     dealias(d_altitude)
     dealias(d_distance)
     
@@ -386,13 +394,14 @@ def analyze_activity(activity, lut_merged=None, onlycache=False):
             ls=":"
         )
     
-    plt.figure()
-    plt.hist2d(
-        grade[m], 
-        heartrate[m],
-        bins=(np.linspace(-60,60,100), np.linspace(0,200,100)),
-    )
-    plt.axvline(8.)
+    if heartrate is not None:
+        plt.figure()
+        plt.hist2d(
+            grade[m], 
+            heartrate[m],
+            bins=(np.linspace(-60,60,100), np.linspace(0,200,100)),
+        )
+        plt.axvline(8.)
     
 
     _ = estimate_track(d_d3, d_altitude, d_time, ttime, lut_speed_grade, d_N=d_N)

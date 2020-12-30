@@ -142,12 +142,32 @@ def activities():
 
     athlete = get_athlete()
 
-    activities = requests.get("https://www.strava.com/api/v3/athlete/activities", 
-            params=dict(
-                per_page=500
-                ),
-            headers={'Authorization': 'Bearer '+token}
-            ).json()
+    activities = []
+
+    page = 1
+    per_page = 100
+    nmax = 300
+    while True:
+        _ = requests.get("https://www.strava.com/api/v3/athlete/activities", 
+                params=dict(
+                    per_page=per_page,
+                    page=page,
+                    ),
+                headers={'Authorization': 'Bearer '+token}
+                ).json()
+
+        if not isinstance(_, list):
+            print(_)
+            break
+
+        print("got page", page, "n", len(_), "total", len(activities))
+        if len(_) == 0:
+            break
+        activities += _
+        page += 1
+
+        if len(activities)>nmax:
+            break
 
     activities = [ activity for activity in activities if activity['type'] != "Ride" ]
 

@@ -5,6 +5,7 @@
             <tr>
               <th scope="col">name</th>
               <th scope="col">type</th>
+              <th scope="col">date</th>
               <th scope="col">G</th>
               <th scope="col">C</th>
               <th scope="col">A</th>
@@ -15,15 +16,16 @@
           {% for activity in activities %}
             {% if activity.analysis %}
             <tr>
-              <td>{{ activity.name }}</td>
+                <td>{{ activity.name }}</td>
               <td>{{ activity.type }}</td>
+              <td>{{ activity.start_date_local }}</td>
               <td>{{ (activity.analysis.total_time_model_estimate_s/3600.0) | round(2) }}</td>
               <td>{{ (activity.analysis.total_time_estimate_s/3600.0) | round(2) }} </td>
               <td>{{ (activity.analysis.summed_time_s/3600.0) | round(2) }}</td>
               <td>
                 <img class="routebar" height="30px" width="100%" src="/images/bar/{{ activity.analysis.modes_string }}"/>
                 <div>
-                <table style="color:#303030;" cellpadding=5px>
+                <table style="color:#303030;" cellpadding=5px width="100%">
                 {% for mode, mode_s in activity.analysis.modes.items() %}
                 <tr>
                     <td>{{ mode }}</td>
