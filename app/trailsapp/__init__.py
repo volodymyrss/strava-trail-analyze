@@ -146,7 +146,7 @@ def activities():
 
     page = 1
     per_page = 100
-    nmax = 300
+    nmax = 150
     while True:
         _ = requests.get("https://www.strava.com/api/v3/athlete/activities", 
                 params=dict(
