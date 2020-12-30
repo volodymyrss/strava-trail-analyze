@@ -90,10 +90,7 @@ def unauthorized(exception):
 
 @app.route("/")
 def root():
-    athlete = get_athlete()
-    return render_template("index.html", user_name=athlete['firstname'], auth_url=get_auth_url())
-
-        
+    return redirect(url_for("routes"))
     
 def fetch_activity_streams(activity):
     client = get_swagger()
