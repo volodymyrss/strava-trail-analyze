@@ -6,3 +6,4 @@ tmp-cache
 *.egg-info
 dist
 build
+data
