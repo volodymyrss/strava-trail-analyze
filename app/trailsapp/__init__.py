@@ -144,7 +144,7 @@ def activities():
 
     activities = requests.get("https://www.strava.com/api/v3/athlete/activities", 
             params=dict(
-                per_page=100
+                per_page=500
                 ),
             headers={'Authorization': 'Bearer '+token}
             ).json()

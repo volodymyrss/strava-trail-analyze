@@ -5,7 +5,7 @@
       <style>
         .tooltip-inner {
             color: #a0a0a0;
-            max-width: 500px;
+            max-width: 800px;
         }
         .jumbotron{
                 height: 100vh;
@@ -40,10 +40,11 @@
                     <a href="/logout"><button type="button" class="btn btn-primary btn-lg mr-1">{{ user_name }}</button></a>
                     <a href="/routes"><button type="button" class="btn btn-success btn-lg mr-1">routes</button></a>
                     <a href="/activities"><button type="button" class="btn btn-secondary btn-lg mr-1">activities</button></a>
-                    <a href="/clear-cache"><button type="button" class="btn btn-danger btn-lg">recompute</button></a>
+                    <a href="/choose-model"><button type="button" class="btn btn-warning btn-lg mr-1">choose model</button></a>
+                    <a href="/clear-cache"><button type="button" class="btn btn-danger btn-lg mr-1">recompute</button></a>
                 {% else %}
                     <a href="{{ auth_url }}"><button type="button" class="btn btn-warning btn-lg">
-                    authorize
+                    sing-in with strava
                     </button></a>
                 {% endif %}
                     </div>
