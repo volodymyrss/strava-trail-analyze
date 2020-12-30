@@ -10,17 +10,28 @@
       </style>
     </head>
     <body>
-        <div class="container">
-        <a href="/logout"><button type="button" class="btn btn-primary btn-lg">
-        {% if user_name %}
-        {{ user_name }}
-        {% else %}
-        Not in!
-        {% endif %}
-        </button></a>
-        <a href="/routes"><button type="button" class="btn btn-success btn-lg">routes</button></a>
-        <a href="/activities"><button type="button" class="btn btn-secondary btn-lg">activities</button></a>
-        <a href="/clear-cache"><button type="button" class="btn btn-danger btn-lg">Clear</button></a>
+        <!-- <div class="page-header">
+            <h1>Trail running routes</h1>
+            Some more advanced analysis of strava <b>trail running routes</b> including rather useful predictions for <b>route moving time</b> and assesment of <b>possible difficulties</b>
+        </div> -->
+        <div class="container-fluid">
+        <div class="jumbotron">
+
+        <div class="row align-self-center justify-content-center">
+            <div class="col-8 d-flex align-items-center justify-content-center">
+                <div class="btn-group btn-group-lg">
+            {% if user_name %}
+                <a href="/logout"><button type="button" class="btn btn-primary btn-lg mr-1">{{ user_name }}</button></a>
+                <a href="/routes"><button type="button" class="btn btn-success btn-lg mr-1">routes</button></a>
+                <a href="/activities"><button type="button" class="btn btn-secondary btn-lg mr-1">activities</button></a>
+                <a href="/clear-cache"><button type="button" class="btn btn-danger btn-lg">recompute</button></a>
+            {% else %}
+                <a href="{{ auth_url }}"><button type="button" class="btn btn-warning btn-lg">
+                authorize
+                </button></a>
+            {% endif %}
+                </div>
+            </div>
         </div>
 
         {% with messages = get_flashed_messages() %}
@@ -33,9 +44,13 @@
         {% endif %}
         {% endwith %}
 
-        <div class="container">
+        <div class="row align-self-center justify-content-md-center">
+            <div class="col">
 {% block content %}
 {% endblock content %}
+            </div>
+        </div>
+        </div>
         </div>
 
 

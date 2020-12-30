@@ -91,7 +91,7 @@ def unauthorized(exception):
 @app.route("/")
 def root():
     athlete = get_athlete()
-    return render_template("index.html", user_name=athlete['firstname'])
+    return render_template("index.html", user_name=athlete['firstname'], auth_url=get_auth_url())
 
         
     
@@ -159,10 +159,9 @@ def activities():
         analyze.analyze_activity(activity, analyze.load_model("v0"))
 
     return render_template("activities.html", user_name=athlete['firstname'], activities=activities)
- 
-@app.route("/auth")
-def auth():
-    auth_url = "http://www.strava.com/oauth/authorize?" + urlencode(dict(
+
+def get_auth_url():
+    return "http://www.strava.com/oauth/authorize?" + urlencode(dict(
                 client_id=read_conf()['client_id'],
                 response_type="code",
                 redirect_uri=os.environ.get("OAUTH_REDIRECT", "https://trail.app.volodymyrsavchenko.com/exchange_token"),
@@ -170,8 +169,10 @@ def auth():
                 scope="activity:read",
                 #scope="activity:read_all",
           ))
-
-    return render_template("auth.html", auth_url=auth_url)
+ 
+@app.route("/auth")
+def auth():
+    return render_template("index.html", auth_url=get_auth_url())
 
 @app.route("/exchange_token")
 def exchange_token():
@@ -192,7 +193,7 @@ def exchange_token():
 
     if r.status_code != 200:
         logger.warning("oauth did not return: %s", r.text)
-        return redirect(url_for("auth"))
+        return redirect(url_for("root"))
 
     token=r.json()['access_token']
 
@@ -203,7 +204,7 @@ def exchange_token():
     if athlete['id'] not in [31879825,]:
         logger.warning(f"Sorry {athlete['firstname']} {athlete['id']}, not allowed in")
         flash("Sorry {athlete['firstname']}, we can not let you in here")
-        return redirect(url_for("auth"))
+        return redirect(url_for("root"))
 
     r = redirect(url_for("root"))
     r.set_cookie('strava_token', token, max_age=60*60)
@@ -231,4 +232,4 @@ def clear_cache():
 def logout():
     r = redirect(url_for("root"))
     r.delete_cookie('strava_token')
-    return redirect(url_for("root"))
+    return r

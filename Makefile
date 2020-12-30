@@ -6,6 +6,7 @@ build:
 run: build
 	docker run \
 	    --user 1000:1000 \
+	    -v $(PWD)/data:/home/app/ \
 	    -v $(PWD)/strava-client.yaml:/strava-client.yaml:ro \
 	    -e OAUTH_REDIRECT=http://trail.volodymyrsavchenko.com:8000/exchange_token \
 	    -e FLASK_SECRET_KEY=$(shell openssl rand -base64 32) \
