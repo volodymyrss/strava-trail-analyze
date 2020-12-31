@@ -4,10 +4,10 @@
           <thead>
             <tr>
               <th scope="col">name</th>
-              <th scope="col">distance</th>
-              <th scope="col">elevation&nbsp;gain</th>
-              <th scope="col">estimated&nbsp;time</th>
-              <th scope="col">estimated&nbsp;calories</th>
+              <th scope="col">D</th>
+              <th scope="col">D+&nbsp;gain</th>
+              <th scope="col">E[time]</th>
+              <th scope="col">E[kCal]</th>
               <th scope="col">composition</th>
             </tr>
           </thead>
@@ -15,13 +15,13 @@
           {% for route in routes %}
             <tr>
               <td>{{ route.name }}</td>
-              <td>{{ (0.001*route.distance) | round(2) }}&nbsp;km</td>
-              <td>{{ route.elevation_gain | round(1) }}&nbsp;m</td>
+              <td>{{ (0.001*route.distance) | round(1) }}&nbsp;km</td>
+              <td>{{ route.elevation_gain | int }}&nbsp;m</td>
               <td>
                   {{ (route.analysis.total_time_estimate_s / 3600.0) | round(2)}}&nbsp;hr&nbsp;<i style="color:#a0a0a0">({{ (route.estimated_moving_time / 3600.0) | round(2)}}&nbsp;hr)</i>
               </td>
               <td>
-                  {{ (route.analysis.total_time_estimate_s / 3600.0 * 700.0) | round(2)}}
+                  {{ (route.analysis.total_time_estimate_s / 3600.0 * 700.0) | int }}
               </td>
               <td>
                   <a  data-toggle="tooltip" data-html="true" title='

@@ -21,7 +21,7 @@
             <h1>Trail running routes</h1>
             Some more advanced analysis of strava <b>trail running routes</b> including rather useful predictions for <b>route moving time</b> and assesment of <b>possible difficulties</b>
         </div> -->
-          <div class="container">
+          <div class="container-fluid">
 
             {% with messages = get_flashed_messages() %}
             {% if messages %}
@@ -37,7 +37,9 @@
                 <br>
             </div>
             <div class="row align-self-center justify-content-center">
-                <div class="col-8 d-flex align-items-center justify-content-center">
+                <div class="col-sm-0 col-md-0 col-lg-2">
+                </div>
+                <div class="col-md-12 col-lg-8 col-sm-12 d-flex align-items-center justify-content-center">
                     <div class="btn-group btn-group-lg">
                 {% if user_name %}
                     <a href="/logout"><button type="button" class="btn btn-primary btn-lg mr-1">{{ user_name }}</button></a>
@@ -52,12 +54,18 @@
                 {% endif %}
                     </div>
                 </div>
+                <div class="col-sm-0 col-md-0 col-lg-2">
+                </div>
             </div>
 
             <div class="row align-self-center">
-                <div class="col">
+                <div class="col-sm-0 col-md-0 col-lg-2">
+                </div>
+                <div class="col-lg-8 col-md-12 col-sm-12">
                 {% block content %}
                 {% endblock content %}
+                </div>
+                <div class="col-sm-0 col-md-0 col-lg-2">
                 </div>
             </div>
 
