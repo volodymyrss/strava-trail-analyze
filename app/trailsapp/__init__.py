@@ -178,7 +178,7 @@ def activities():
     return render_template("activities.html", user_name=athlete['firstname'], activities=activities)
 
 def get_auth_url():
-    return "http://www.strava.com/oauth/authorize?" + urlencode(dict(
+    return "https://www.strava.com/oauth/authorize?" + urlencode(dict(
                 client_id=read_conf()['client_id'],
                 response_type="code",
                 redirect_uri=os.environ.get("OAUTH_REDIRECT", "https://trail.app.volodymyrsavchenko.com/exchange_token"),
