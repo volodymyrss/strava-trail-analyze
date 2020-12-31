@@ -4,11 +4,8 @@
           <thead>
             <tr>
               <th scope="col">name</th>
-              <th scope="col">type</th>
               <th scope="col">date</th>
-              <th scope="col">G</th>
-              <th scope="col">C</th>
-              <th scope="col">A</th>
+              <th scope="col">G/C/A</th>
               <th scope="col"></th>
             </tr>
           </thead>
@@ -16,12 +13,19 @@
           {% for activity in activities %}
             {% if activity.analysis %}
             <tr>
-                <td>{{ activity.name }}</td>
-              <td>{{ activity.type }}</td>
-              <td>{{ activity.start_date_local }}</td>
-              <td>{{ (activity.analysis.total_time_model_estimate_s/3600.0) | round(2) }}</td>
-              <td>{{ (activity.analysis.total_time_estimate_s/3600.0) | round(2) }} </td>
-              <td>{{ (activity.analysis.summed_time_s/3600.0) | round(2) }}</td>
+              <td>{{ activity.name }}
+               <i>({{ activity.type }})</i></td>
+              <td>
+                  {{ activity.start_date_local.split("T")[0] }}
+                  {{ activity.start_date_local.split("T")[1].replace("Z", "") }}
+              </td>
+              <td>
+              {{ (activity.analysis.total_time_model_estimate_s/3600.0) | round(2) }} 
+                  <br>
+              {{ (activity.analysis.total_time_estimate_s/3600.0) | round(2) }} 
+                  <br>
+              {{ (activity.analysis.summed_time_s/3600.0) | round(2) }}
+              </td>
               <td>
                 <img class="routebar" height="30px" width="100%" src="/images/bar/{{ activity.analysis.modes_string }}"/>
                 <div>
