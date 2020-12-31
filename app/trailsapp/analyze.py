@@ -222,8 +222,8 @@ def pngbar(fractions):
     if fractions in cache:
         return cache[fractions]
 
-    width = 250
-    height = 25
+    width = 100
+    height = 5
     img = []
 
     print(fractions)
@@ -233,7 +233,7 @@ def pngbar(fractions):
     row = ()
     for x in range(width):
         a = fractions - x/width
-        a[a < 0] = 1
+        a[a <= 0] = 1
         i = np.argmin(a)
         px = tuple([int(c*255) for c in cm.jet(i/len(fractions))[:-1]])
         row = row + px

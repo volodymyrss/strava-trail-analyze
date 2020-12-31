@@ -1,6 +1,6 @@
 {% extends "layout.html" %} 
 {% block content %}
-        <table class="table table-striped">
+        <table class="table table-striped" width="100%">
           <thead>
             <tr>
               <th scope="col">name</th>
@@ -42,7 +42,7 @@
 {% endfor %}
 </table>
 </div>
-'><img class="routebar" src="/images/bar/{{ route.analysis.modes_string }}"/></a>
+'><img class="routebar"  height="30px" width="100%" src="/images/bar/{{ route.analysis.modes_string }}"/></a>
             </tr>
           {% endfor %}
           </tbody>
