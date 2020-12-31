@@ -108,7 +108,7 @@ def fetch_route_gpx(route):
     print("getting route gpx for", route['id'])
     route['route_gpx'] = gpxpy.parse(io.BytesIO(requests.get(f"https://www.strava.com/api/v3//routes/{route['id']}/export_gpx", 
         params=dict(
-            per_page=100
+            per_page=50
             ),
         headers={'Authorization': 'Bearer '+get_request_token()}
         ).content))
@@ -124,7 +124,7 @@ def routes():
 
     routes = [r for r in requests.get(f"https://www.strava.com/api/v3/athletes/{athlete['id']}/routes", 
             params=dict(
-                per_page=200
+                per_page=50
                 ),
             headers={'Authorization': 'Bearer '+token}
             ).json() if r['type'] != 1]
@@ -145,8 +145,8 @@ def activities():
     activities = []
 
     page = 1
-    per_page = 100
-    nmax = 150
+    per_page = 50
+    nmax = 50
     while True:
         _ = requests.get("https://www.strava.com/api/v3/athlete/activities", 
                 params=dict(
