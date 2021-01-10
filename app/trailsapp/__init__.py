@@ -218,7 +218,7 @@ def exchange_token():
 
     logger.info("found athelete", athlete)
 
-    if athlete['id'] not in [31879825,]:
+    if athlete['id'] not in [31879825, 5609018, 32262377]: # vs, yc, vl
         logger.warning(f"Sorry {athlete['firstname']} {athlete['id']}, not allowed in")
         flash("Sorry {athlete['firstname']}, we can not let you in here")
         return redirect(url_for("root"))
