@@ -1,7 +1,7 @@
 IMAGE=volodymyrsavchenko/trails:$(shell git describe --always --tags)
 
 build:
-	docker build . -t $(IMAGE)
+	docker build -f Dockerfile.app . -t $(IMAGE)
 
 run: build
 	docker run \
