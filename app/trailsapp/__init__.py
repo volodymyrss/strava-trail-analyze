@@ -39,6 +39,12 @@ app.config.update(
 
 app.register_blueprint(solid.solid_app)
 
+import hashlib
+athlete_by_tokenhash = dict()
+
+class RateLimitError(Exception):
+    pass
+
 
 def get_request_token():
     token = request.cookies.get('strava_token', None)
@@ -47,11 +53,28 @@ def get_request_token():
         raise UnauthorizedError()
 
     return token
+
     
 def get_athlete(token=None):
     if token is None:
         token = get_request_token()
-    return requests.get("https://www.strava.com/api/v3/athlete", headers={"Authorization": f"Bearer {token}"}).json()
+
+    tokenhash = hashlib.md5(token.encode()).hexdigest()[:8]
+    if tokenhash in athlete_by_tokenhash:
+        return athlete_by_tokenhash[tokenhash]
+
+    with requests_cache.disabled():
+        r = requests.get("https://www.strava.com/api/v3/athlete", headers={"Authorization": f"Bearer {token}"})
+
+    athlete_by_tokenhash[tokenhash] = r.json()
+
+    if r.status_code != 200:
+        raise RuntimeError(f"{r}: {r.text}")
+
+    if r.status_code == 429:
+        raise RateLimitError
+
+    return r.json()
 
 def get_swagger(token=None):
     if token is None:
@@ -94,6 +117,11 @@ class UnauthorizedError(Exception):
 @app.errorhandler(UnauthorizedError)
 def unauthorized(exception):
     return redirect(url_for("auth"))
+
+@app.errorhandler(RateLimitError)
+def unauthorized(exception):
+    return make_response("Rate limit exceeded while querying strava! Please retry later.")
+
 
 @app.route("/")
 def root():
@@ -153,15 +181,16 @@ def activities():
 
     page = 1
     per_page = 50
-    nmax = 50
+    nmax = 10
     while True:
-        _ = requests.get("https://www.strava.com/api/v3/athlete/activities", 
-                params=dict(
-                    per_page=per_page,
-                    page=page,
-                    ),
-                headers={'Authorization': 'Bearer '+token}
-                ).json()
+        with requests_cache.disabled():
+            _ = requests.get("https://www.strava.com/api/v3/athlete/activities", 
+                    params=dict(
+                        per_page=per_page,
+                        page=page,
+                        ),
+                    headers={'Authorization': 'Bearer '+token}
+                    ).json()
 
         if not isinstance(_, list):
             print(_)
@@ -223,9 +252,9 @@ def exchange_token():
 
     athlete = get_athlete(token=token)
 
-    logger.info("found athelete", athlete)
+    logger.info("found athelete: %s", str(athlete))
 
-    if athlete['id'] not in [31879825, 5609018, 32262377]: # vs, yc, vl
+    if athlete['id'] not in [31879825, 5609018, 32262377, 88800880]: # vs, yc, vl, altvs
         logger.warning(f"Sorry {athlete['firstname']} {athlete['id']}, not allowed in")
         flash("Sorry {athlete['firstname']}, we can not let you in here")
         return redirect(url_for("root"))
