@@ -11,9 +11,10 @@ import logging
 
 
 import requests_cache
+import diskcache as dc
 
 import time
-import bravado
+import hashlib
 import bravado.client
 import bravado.requests_client
 import bravado.http_client
@@ -39,8 +40,11 @@ app.config.update(
 
 app.register_blueprint(solid.solid_app)
 
-import hashlib
 athlete_by_tokenhash = dict()
+
+
+athlete_cache = dc.Cache('athlete-cache')
+
 
 class RateLimitError(Exception):
     pass
@@ -60,13 +64,13 @@ def get_athlete(token=None):
         token = get_request_token()
 
     tokenhash = hashlib.md5(token.encode()).hexdigest()[:8]
-    if tokenhash in athlete_by_tokenhash:
-        return athlete_by_tokenhash[tokenhash]
+    if tokenhash in athlete_cache:
+        return athlete_cache[tokenhash]
 
     with requests_cache.disabled():
         r = requests.get("https://www.strava.com/api/v3/athlete", headers={"Authorization": f"Bearer {token}"})
 
-    athlete_by_tokenhash[tokenhash] = r.json()
+    athlete_cache[tokenhash] = r.json()
 
     if r.status_code != 200:
         raise RuntimeError(f"{r}: {r.text}")
