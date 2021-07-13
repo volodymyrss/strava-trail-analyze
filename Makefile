@@ -16,7 +16,9 @@ push: build
 	docker push $(IMAGE)
 
 listen:
-	gunicorn trailsapp:app -b 0.0.0.0:8000 --log-level debug
+	FLASK_TEMPLATES=$(shell pwd)/app/templates \
+	FLASK_STATIC=$(shell pwd)/app/static \
+			gunicorn trailsapp:app -b 0.0.0.0:8000 --log-level debug
 
 up: push
 	helm upgrade --install trails chart --set image.tag=$(shell git describe --always --tags)

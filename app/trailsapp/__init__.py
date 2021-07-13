@@ -6,6 +6,7 @@ import os
 import io
 import gpxpy
 import trailsapp.analyze as analyze
+import trailsapp.solid as solid
 import logging
 
 
@@ -24,7 +25,10 @@ logging.basicConfig(level=logging.INFO)
 
 requests_cache.install_cache('appcache')
 
-app = Flask(__name__, template_folder="/templates")
+app = Flask(__name__, 
+            template_folder=os.environ.get("FLASK_TEMPLATES", "/templates"),
+            static_folder=os.environ.get("FLASK_STATIC", "/static")
+            )
 app.secret_key = os.environ.get("FLASK_SECRET_KEY").encode()
 
 app.config.update(
@@ -32,6 +36,9 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
 )
+
+app.register_blueprint(solid.solid_app)
+
 
 def get_request_token():
     token = request.cookies.get('strava_token', None)
@@ -250,3 +257,4 @@ def logout():
     r = redirect(url_for("root"))
     r.delete_cookie('strava_token')
     return r
+
