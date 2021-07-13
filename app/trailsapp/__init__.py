@@ -70,11 +70,11 @@ def get_athlete(token=None):
 
     athlete_cache[tokenhash] = r.json()
 
-    if r.status_code != 200:
-        raise RuntimeError(f"{r}: {r.text}")
-
     if r.status_code == 429:
         raise RateLimitError()
+
+    if r.status_code != 200:
+        raise RuntimeError(f"{r}: {r.text}")
 
     return r.json()
 
