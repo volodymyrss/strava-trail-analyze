@@ -74,7 +74,7 @@ def get_athlete(token=None):
         raise RuntimeError(f"{r}: {r.text}")
 
     if r.status_code == 429:
-        raise RateLimitError
+        raise RateLimitError()
 
     return r.json()
 
@@ -143,12 +143,18 @@ def fetch_activity_streams(activity):
 
 def fetch_route_gpx(route):
     print("getting route gpx for", route['id'])
-    route['route_gpx'] = gpxpy.parse(io.BytesIO(requests.get(f"https://www.strava.com/api/v3//routes/{route['id']}/export_gpx", 
+
+    r = requests.get(f"https://www.strava.com/api/v3//routes/{route['id']}/export_gpx", 
         params=dict(
             per_page=50
             ),
         headers={'Authorization': 'Bearer '+get_request_token()}
-        ).content))
+        )
+
+    if r.status_code == 429:
+        raise RateLimitError()
+
+    route['route_gpx'] = gpxpy.parse(io.BytesIO(r.content))
     route['route_points'] = route['route_gpx'].tracks[0].segments[0].points
 
     print("got", route['route_gpx'].tracks[0])
