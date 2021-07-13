@@ -40,10 +40,8 @@ app.config.update(
 
 app.register_blueprint(solid.solid_app)
 
-athlete_by_tokenhash = dict()
-
-
 athlete_cache = dc.Cache('athlete-cache')
+athlete_activity_cache = dc.Cache('athlete-activity-cache')
 
 
 class RateLimitError(Exception):
@@ -185,29 +183,35 @@ def activities():
 
     page = 1
     per_page = 50
-    nmax = 10
-    while True:
-        with requests_cache.disabled():
-            _ = requests.get("https://www.strava.com/api/v3/athlete/activities", 
-                    params=dict(
-                        per_page=per_page,
-                        page=page,
-                        ),
-                    headers={'Authorization': 'Bearer '+token}
-                    ).json()
+    nmax = 50
 
-        if not isinstance(_, list):
-            print(_)
-            break
+    if athlete['id'] in athlete_activity_cache:
+        activities = athlete_activity_cache[athlete['id']]
+    else:
+        while True:
+            with requests_cache.disabled():
+                _ = requests.get("https://www.strava.com/api/v3/athlete/activities", 
+                        params=dict(
+                            per_page=per_page,
+                            page=page,
+                            ),
+                        headers={'Authorization': 'Bearer '+token}
+                        ).json()
 
-        print("got page", page, "n", len(_), "total", len(activities))
-        if len(_) == 0:
-            break
-        activities += _
-        page += 1
+            if not isinstance(_, list):
+                print(_)
+                break
 
-        if len(activities)>nmax:
-            break
+            print("got page", page, "n", len(_), "total", len(activities))
+            if len(_) == 0:
+                break
+            activities += _
+            page += 1
+
+            if len(activities)>nmax:
+                break
+
+        athlete_activity_cache[athlete['id']] = activities
 
     activities = [ activity for activity in activities if activity['type'] != "Ride" ]
 
@@ -282,6 +286,8 @@ def get_image(fractions):
 @app.route("/clear-cache")
 def clear_cache():
     requests_cache.clear()
+    athlete_activity_cache.clear()
+    athlete_cache.clear()
     flash("cache cleared!")
     return redirect(url_for("root"))
 
