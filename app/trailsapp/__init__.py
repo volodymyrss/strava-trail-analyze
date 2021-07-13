@@ -189,10 +189,10 @@ def activities():
 
     page = 1
     per_page = 50
-    nmax = 50
+    nmax = int(request.args.get("nmax", 50))
 
-    if athlete['id'] in athlete_activity_cache:
-        activities = athlete_activity_cache[athlete['id']]
+    if (athlete['id'], nmax) in athlete_activity_cache:
+        activities = athlete_activity_cache[(athlete['id'], nmax)]
     else:
         while True:
             with requests_cache.disabled():
@@ -211,15 +211,14 @@ def activities():
             print("got page", page, "n", len(_), "total", len(activities))
             if len(_) == 0:
                 break
-            activities += _
+            activities += [ activity for activity in _ if activity['type'] != "Ride" ]
             page += 1
 
             if len(activities)>nmax:
+                print("max activities!")
                 break
 
-        athlete_activity_cache[athlete['id']] = activities
-
-    activities = [ activity for activity in activities if activity['type'] != "Ride" ]
+        athlete_activity_cache[(athlete['id'], nmax)] = activities
 
     for activity in activities:
         fetch_activity_streams(activity)
