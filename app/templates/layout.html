@@ -44,12 +44,14 @@
                 {% if user_name %}
                     <a href="/logout"><button type="button" class="btn btn-primary btn-lg mr-1">{{ user_name }}</button></a>
                     <a href="/routes"><button type="button" class="btn btn-success btn-lg mr-1">routes</button></a>
-                    <a href="/activities"><button type="button" class="btn btn-secondary btn-lg mr-1">activities</button></a>
+                    <!-- <a href="/activities"><button type="button" class="btn btn-secondary btn-lg mr-1">activities</button></a> -->
                     <a href="/choose-model"><button type="button" class="btn btn-warning btn-lg mr-1">choose model</button></a>
                     <a href="/clear-cache"><button type="button" class="btn btn-danger btn-lg mr-1">recompute</button></a>
+                    <a href="/upload"><button type="button" class="btn btn-secondary btn-lg mr-1">upload</button></a>
+
                 {% else %}
                     <a href="{{ auth_url }}"><button type="button" class="btn btn-warning btn-lg">
-                    sing-in with strava
+                    sing-in with gitlab.com
                     </button></a>
                 {% endif %}
                     </div>

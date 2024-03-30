@@ -5,6 +5,8 @@ RUN pip install -r requirements.txt
 ADD app /app
 RUN pip install /app
 ADD app/templates /templates
+ADD app/static /static
+RUN chmod +r -R /static
 
 
 RUN useradd app -u 1000 
@@ -12,7 +14,7 @@ RUN useradd app -u 1000
 WORKDIR /home/app
 
 RUN chown app:app /home/app
-RUN touch /strava-client.yaml
+RUN touch /client.yaml
 
 # default model
 ADD lut_merged.npy /home/app/lut_merged.npy

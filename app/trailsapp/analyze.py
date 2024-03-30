@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib as mpl
-mpl.use('agg')
+# mpl.use('agg')
 import matplotlib.pylab as plt
 import matplotlib.cm as cm
 import png
@@ -91,8 +91,8 @@ def extract_modes(grade, d_time, d_d3, altitude):
 
     S = {}
 
-    print(d_time)
-    print(d_time[d_time<0])
+    # print(d_time)
+    # print(d_time[d_time<0])
 
     for i, (n, mx) in enumerate([
         ("run flat", m_route_run_flat),
@@ -125,14 +125,7 @@ def extract_modes(grade, d_time, d_d3, altitude):
     return S
 
 
-def analyze_route(route, plot=False, onlycache=False):
-    cache_key = (route["name"], "v0")
-    if cache_key in cache:
-        route['analysis'] = cache[cache_key]
-        return True
-    if onlycache:
-        return False
-
+def analyze_route(route, plot=False):
     lut_merged = load_model()
     d_N = 2
     N = 3
@@ -150,6 +143,7 @@ def analyze_route(route, plot=False, onlycache=False):
     print(f"\033[31m{route['route_gpx'].name}\033[0m", route['type'], route['sub_type'])
 
     if plot:
+        print("plotting")
         plt.figure()
         plt.title(route['route_gpx'].name)
 
@@ -158,6 +152,8 @@ def analyze_route(route, plot=False, onlycache=False):
             route_lat,
             c=cm.jet(route_grade/50.),
         )
+        plt.xlabel("longitude")
+        plt.ylabel("latitude")
 
         plt.grid()
     #plt.ylim([-50, 50])
@@ -172,7 +168,7 @@ def analyze_route(route, plot=False, onlycache=False):
 
     total_time_alt_estim = 0
     
-    print(f"total distance {np.sum(d_route_d3)/1000.:.2f} km (strava {route['distance']/1000.:.2f})")
+    print(f"total distance {np.sum(d_route_d3)/1000.:.2f} km")
     
     
     summary = {} 
@@ -189,9 +185,9 @@ def analyze_route(route, plot=False, onlycache=False):
     summary['total_time_estimate_s'] = total_time_estim
     summary['total_time_alt_estimate_s'] = total_time_alt_estim
 
-    print(f"cumulative elevation gain {summary['cumulative_elevation_gain']:.2f} m (strava {route['elevation_gain']:.2f})")
-    print(f"total elevation gain {summary['total_elevation_gain']:.2f} m (strava {route['elevation_gain']:.2f})")
-    print(f"total time {total_time_estim/3600.:.2f} strava estim {route['estimated_moving_time']/3600.:.2f}")
+    print(f"cumulative elevation gain {summary['cumulative_elevation_gain']:.2f} m")
+    print(f"total elevation gain {summary['total_elevation_gain']:.2f} m")
+    print(f"total time {total_time_estim/3600.:.2f}")
 
 
     summary['modes'] = extract_modes(route_grade, d_time_estims, d_route_d3, route_altitude)
@@ -199,24 +195,21 @@ def analyze_route(route, plot=False, onlycache=False):
     summary['modes_string'] = ",".join([ "%.5lg"%m['time_fraction_pc'] for n, m in sorted(summary['modes'].items(), key=lambda x:x[1]['order']) if n is not "all"])
         
         
-    if False:
+    if plot:
         plt.figure()
         plt.plot(
             np.cumsum(d_route_d3),
-            route_altitude,
+            route_altitude,            
         )
+        plt.xlabel("distance [m]")
         plt.plot(
             np.cumsum(d_route_d3),
             np.cumsum(d_(route_altitude, N))/(N-1),
         )
         plt.grid()
-        
+                
+    return summary
     
-    cache[cache_key] = route['analysis']
-    
-    return True
-    
-
 
 def pngbar(fractions):
     if fractions in cache:
@@ -481,3 +474,167 @@ def estimate_track(d_d3, d_altitude, d_time, ttime, lut, d_N):
                 d_time_estims = d_time_estims,
             )
         
+
+
+
+
+def produce_lut(gpx):    
+    luts = []
+    d_N = 10    
+    
+    route_points = list(gpx.tracks)[0].segments[0].points
+
+    d_route_d3 = np.array([0] + [a.distance_3d(b) for a,b in zip(route_points[:-1], route_points[1:])])
+    route_d3 = np.cumsum(d_route_d3)
+
+    distance = route_d3
+    altitude = np.array([p.elevation for p in route_points])
+    ttime = np.array([p.time.timestamp() for p in route_points])
+    latlng = np.array([(p.latitude, p.longitude) for p in route_points])
+      
+    d_distance = d_(distance, d_N)
+    d_altitude = d_(altitude, d_N)
+    d_d3 = (d_distance**2 + d_altitude**2)**0.5
+    d_time = d_(ttime, d_N)
+    
+    speed_kph = d_d3/d_time *3600./1000.
+    vam = d_altitude/d_time    
+    grade = d_altitude/d_d3*100.
+    
+
+    def dealias(x):
+        mn = np.round(np.abs(x[x>0]).min(), 5)
+        print("found step", mn)
+        x += np.random.rand(altitude.shape[0])*mn - mn/2.
+        
+    # dealias(cadence)
+    dealias(d_altitude)
+    dealias(d_distance)
+
+    speed_kph = d_d3/d_time *3600./1000.
+    vam = d_altitude/d_time*1000
+    grade = d_altitude/d_d3*100.
+
+    m = np.abs(d_altitude)<1000
+    m &= np.abs(vam)<2000
+
+    def p2d(x,y, x_bins, y_bins, mode='hist'):
+
+        if mode == "scatter":
+            plt.scatter(x,y,s=5)
+        elif mode == 'hist':
+            return plt.hist2d(x,y, bins=(
+                    x_bins,
+                    y_bins,
+                )
+            )
+        elif mode == 'contour':
+            h2, a,b  = np.histogram2d(x,y, bins=(
+                    x_bins,
+                    y_bins,
+                )
+            )
+
+            plt.contourf(
+                a[:-1],
+                b[:-1],
+                np.transpose(h2),
+                #levels=np.logspace(np.log10(h2.max()/1000.), np.log10(h2.max()), 100)
+                levels=np.linspace(0, h2.max(), 100)
+            )
+
+
+    for mode in 'hist',: #'contour':
+        f, (ax1,ax2)= plt.subplots(1,2,figsize=(9,5))
+        lut_speed_grade = p2d(
+            speed_kph[m],
+            #d_altitude[m]/d_time[m]*3600.,
+            #60./(d_distance[m]/d_time[m]*3600./1000.),
+            #d_distance[m]/d_time[m]*3600./1000.,
+            #d_altitude[m]/d_time[m]*3600.,
+            #d_altitude[m]/d_time[m]*3600,
+            grade[m],
+            mode = mode,
+            x_bins = np.linspace(0, 15, 70),
+            y_bins = np.linspace(-60, 60, 70),
+            #y_bins = np.linspace(-2000, 2000, 70),
+        )
+        
+        luts.append(lut_speed_grade)
+        
+        plt.subplots_adjust(wspace=0)
+        
+        ax1.scatter(latlng[:,1], latlng[:,0], 
+            #c=cm.jet(np.array(streams['velocity_smooth']['data'])/6.),
+            c=cm.jet((
+                np.array(d_altitude*3600)/(1000.)
+                #np.array(streams['altitude']['data'])-320)/(600-320)
+            ),
+        ))
+        
+        # plt.title(activity['name'])
+        
+    print("total time", (ttime[-1] - ttime[0])/3600., "hr")
+        
+
+    # x_grade = np.linspace(-50,50)
+    # ax2.plot(
+    #     [speed_estim_for_grade(x, lut_merged, (0, 1.)) for x in x_grade],
+    #     x_grade,
+    #     c="k",
+    #     lw=3,
+    # )
+    # ax2.plot(
+    #     [speed_estim_for_grade(x, lut_merged, (0.3, 0.7)) for x in x_grade],
+    #     x_grade,
+    #     c="r",
+    #     lw=3,
+    #     ls=":"
+    # )
+    
+    # plt.figure()
+    # plt.hist2d(
+    #     grade[m], 
+    #     heartrate[m],
+    #     bins=(100, 100),
+    # )
+    # plt.axvline(8.)
+    
+
+    
+    # total_time_estim = 0
+    # sum_time = 0
+    # i = 0
+    # for d_d, d_a, d_t, _t in zip(d_d3, d_altitude, d_time, ttime):
+    #     i += 1
+    #     if i<30: continue
+    #     if i>len(d_time)-100: continue
+        
+    #     #print(d_d, d_a)
+        
+    #     grade = d_a/d_d*100.
+        
+    #     d_time_estim = d_d/(speed_estim_for_grade(grade, lut_merged)/3600.*1000)/(d_N-1)
+        
+    #     if not np.isnan(d_time_estim)and  not np.isinf(d_time_estim):
+    #         total_time_estim += d_time_estim
+    #         sum_time += d_t/(d_N-1)
+                        
+    #     #print("since", _t - ttime[0], "estim", total_time_estim, "sum", sum_time)
+    #     #print("grade", grade, "speed", d_d/d_t*3.6, "estim speed", speed_estim_for_grade(grade, lut_speed_grade), "time estim", d_time_estim, "time spent", d_t)
+        
+        
+        
+    # print("total time estimate", total_time_estim/3600., "hr", "summed time", sum_time/3600., "hr")
+    
+    # print("total run fraction", np.sum(m_run)/m_run.shape[0])
+        
+    # #break
+
+    # #ax=plt.gca()
+    # #ax2=plt.twiny()
+    # #ax2.set_xlim(60./np.array(ax.get_xlim()))
+
+    # #plt.xlabel("pace")
+    # #plt.ylabel("grade")
+    # #plt.ylabel("VAM")

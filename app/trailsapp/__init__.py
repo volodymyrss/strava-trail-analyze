@@ -1,6 +1,9 @@
+import glob
+import json
 import yaml
 import requests
-from flask import Flask, jsonify, request, render_template, redirect, make_response, url_for, flash
+from flask import Flask, jsonify, request, render_template, redirect, make_response, url_for, flash, send_file
+from werkzeug.utils import secure_filename
 from urllib.parse import urlencode
 import os
 import io
@@ -28,7 +31,7 @@ requests_cache.install_cache('appcache')
 
 app = Flask(__name__, 
             template_folder=os.environ.get("FLASK_TEMPLATES", "/templates"),
-            static_folder=os.environ.get("FLASK_STATIC", "/static")
+            # static_folder=os.environ.get("FLASK_STATIC", "/static")
             )
 app.secret_key = os.environ.get("FLASK_SECRET_KEY").encode()
 
@@ -48,25 +51,36 @@ class RateLimitError(Exception):
     pass
 
 
-def get_request_token():
-    token = request.cookies.get('strava_token', None)
+def get_access_token():
+    token = request.cookies.get('oauth2_token', None)
     if token is None:
         logger.warning("no token")
         raise UnauthorizedError()
+    
+    print("token", token)
 
     return token
 
     
 def get_athlete(token=None):
     if token is None:
-        token = get_request_token()
+        token = get_access_token()
+
+    print("get_athlete token", token)
 
     tokenhash = hashlib.md5(token.encode()).hexdigest()[:8]
     if tokenhash in athlete_cache:
         return athlete_cache[tokenhash]
 
     with requests_cache.disabled():
-        r = requests.get("https://www.strava.com/api/v3/athlete", headers={"Authorization": f"Bearer {token}"})
+        r = requests.get("https://gitlab.com/oauth/userinfo", headers={"Authorization": f"Bearer {token}"})
+        # r = requests.get("https://gitlab.com/oauth/introspect", headers={"Authorization": f"Bearer {token}"})
+        print(r, r.content)
+
+    athlete_id = r.json()['sub']
+
+    if athlete_id not in ['1340065']:
+        raise UnauthorizedError()
 
     athlete_cache[tokenhash] = r.json()
 
@@ -80,7 +94,7 @@ def get_athlete(token=None):
 
 def get_swagger(token=None):
     if token is None:
-        token = get_request_token()
+        token = get_access_token()
 
     http_client = RequestsClient()
     http_client.set_api_key(
@@ -103,10 +117,10 @@ def get_swagger(token=None):
     return client
 
 def read_conf():
-    try:
-        return yaml.safe_load(open("strava-client.yaml"))
-    except IOError:
-        return yaml.safe_load(open("/strava-client.yaml"))
+    config = yaml.safe_load(open(os.getenv("TRAIL_APP_CONFIG", "config.yaml")))
+    print(config)
+    config['client'] = yaml.safe_load(open("client.yaml"))
+    return config
 
 
 #@app.errorhandler(Exception)
@@ -128,112 +142,35 @@ def unauthorized(exception):
 @app.route("/")
 def root():
     return redirect(url_for("routes"))
-    
-def fetch_activity_streams(activity):
-    client = get_swagger()
 
-    activity['streams'] = client.Streams.getActivityStreams(
-        id=activity['id'], 
-        keys="time, distance, latlng, altitude, velocity_smooth, heartrate, cadence, watts, temp, moving, grade_smooth".split(", "),
-        key_by_type=True,
-        ).response().result
-
-
-    print(activity['name'])
-
-def fetch_route_gpx(route):
-    print("getting route gpx for", route['id'])
-
-    r = requests.get(f"https://www.strava.com/api/v3//routes/{route['id']}/export_gpx", 
-        params=dict(
-            per_page=50
-            ),
-        headers={'Authorization': 'Bearer '+get_request_token()}
-        )
-
-    if r.status_code == 429:
-        raise RateLimitError()
-
-    route['route_gpx'] = gpxpy.parse(io.BytesIO(r.content))
-    route['route_points'] = route['route_gpx'].tracks[0].segments[0].points
-
-    print("got", route['route_gpx'].tracks[0])
 
 @app.route("/routes")
 def routes():
-    token = get_request_token()
-
     athlete = get_athlete()
 
-    routes = [r for r in requests.get(f"https://www.strava.com/api/v3/athletes/{athlete['id']}/routes", 
-            params=dict(
-                per_page=50
-                ),
-            headers={'Authorization': 'Bearer '+token}
-            ).json() if r['type'] != 1]
+    print("athlete", athlete)
+    
+    config = read_conf() 
 
-    for route in routes:
-        if not analyze.analyze_route(route, onlycache=True):
-            fetch_route_gpx(route)
-        analyze.analyze_route(route)
+    athlete_dir = os.path.join(config['data_dir'], athlete['sub'])
+    routes = []
 
-    return render_template("routes.html", user_name=athlete['firstname'], routes=routes)
+    
+    for route in glob.glob(f"{athlete_dir}/*.json"):
+        with open(route, "r") as f:
+            routes.append(json.load(f))
 
-@app.route("/activities")
-def activities():
-    token = get_request_token()
+    return render_template("routes.html", user_name=athlete['name'], routes=routes)
 
-    athlete = get_athlete()
-
-    activities = []
-
-    page = 1
-    per_page = 50
-    nmax = int(request.args.get("nmax", 50))
-
-    if (athlete['id'], nmax) in athlete_activity_cache:
-        activities = athlete_activity_cache[(athlete['id'], nmax)]
-    else:
-        while True:
-            with requests_cache.disabled():
-                _ = requests.get("https://www.strava.com/api/v3/athlete/activities", 
-                        params=dict(
-                            per_page=per_page,
-                            page=page,
-                            ),
-                        headers={'Authorization': 'Bearer '+token}
-                        ).json()
-
-            if not isinstance(_, list):
-                print(_)
-                break
-
-            print("got page", page, "n", len(_), "total", len(activities))
-            if len(_) == 0:
-                break
-            activities += [ activity for activity in _ if activity['type'] != "Ride" ]
-            page += 1
-
-            if len(activities)>nmax:
-                print("max activities!")
-                break
-
-        athlete_activity_cache[(athlete['id'], nmax)] = activities
-
-    for activity in activities:
-        fetch_activity_streams(activity)
-        analyze.analyze_activity(activity, analyze.load_model("v0"))
-
-    return render_template("activities.html", user_name=athlete['firstname'], activities=activities)
 
 def get_auth_url():
-    return "https://www.strava.com/oauth/authorize?" + urlencode(dict(
-                client_id=read_conf()['client_id'],
+    conf = read_conf()
+    return "https://gitlab.com/oauth/authorize?" + urlencode(dict(
+                client_id=conf['client']['client_id'],
                 response_type="code",
-                redirect_uri=os.environ.get("OAUTH_REDIRECT", "https://trail.app.volodymyrsavchenko.com/exchange_token"),
-                approval_prompt="force",
-                scope="activity:read",
-                #scope="activity:read_all",
+                redirect_uri=conf['client']["redirect_base"] + "/exchange_token",
+                # approval_prompt="force",
+                scope="read_user openid profile email",
           ))
  
 @app.route("/auth")
@@ -243,17 +180,17 @@ def auth():
 @app.route("/exchange_token")
 def exchange_token():
     code = request.args.get("code")
-
     conf = read_conf()
         
     logger.warning("requested to exchange token")
     
-    r=requests.post("https://www.strava.com/api/v3/oauth/token",
+    r = requests.post("https://gitlab.com/oauth/token",
               data=dict(
-                        client_id=conf['client_id'],
-                        client_secret=conf['client_secret'],
+                        client_id=conf['client']['client_id'],
+                        client_secret=conf['client']['client_secret'],
                         code=code,
                         grant_type="authorization_code",
+                        redirect_uri=conf['client']["redirect_base"] + "/exchange_token",
                    )
               )
 
@@ -261,19 +198,15 @@ def exchange_token():
         logger.warning("oauth did not return: %s", r.text)
         return redirect(url_for("root"))
 
+
     token=r.json()['access_token']
 
     athlete = get_athlete(token=token)
 
-    logger.info("found athelete: %s", str(athlete))
-
-    if athlete['id'] not in [31879825, 5609018, 32262377, 88800880]: # vs, yc, vl, altvs
-        logger.warning(f"Sorry {athlete['firstname']} {athlete['id']}, not allowed in")
-        flash("Sorry {athlete['firstname']}, we can not let you in here")
-        return redirect(url_for("root"))
+    logger.info("found athlete: %s", str(athlete))
 
     r = redirect(url_for("root"))
-    r.set_cookie('strava_token', token, max_age=60*60)
+    r.set_cookie('oauth2_token', token, max_age=60*60)
 
     return r
 
@@ -299,6 +232,71 @@ def clear_cache():
 @app.route("/logout")
 def logout():
     r = redirect(url_for("root"))
-    r.delete_cookie('strava_token')
+    r.delete_cookie('oauth2_token')
     return r
 
+
+@app.route('/upload', methods=['GET', 'POST'])
+def upload_file():
+    if request.method == 'POST':
+        # check if the post request has the file part
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        file = request.files['file']
+
+        config = read_conf()
+        athlete = get_athlete()
+        athlete_dir = os.path.join(config['data_dir'], athlete['sub'])
+        os.makedirs(athlete_dir, exist_ok=True)
+        
+        if file.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
+        
+        if not file.filename.endswith(".gpx") and not file.filename.endswith(".GPX"):
+            flash('Invalid file type')
+            return redirect(request.url)
+        
+        if file:
+            filename = secure_filename(file.filename)
+            fullfn = os.path.join(athlete_dir, filename)
+            file.save(fullfn)
+            gpx = gpxpy.parse(open(fullfn).read())
+            
+            print("gpx", gpx)
+
+            track = list(gpx.tracks)[0]
+            segment = list(track.segments)[0]
+
+            print("segment", segment)
+
+            entry = {
+                "name": gpx.name,
+                "route_points": segment.points,
+                "route_gpx": gpx,
+                "type": "gpx",
+                "sub_type": "gpx",
+            }
+
+            
+
+            entry['analysis'] =  analyze.analyze_route(entry)
+
+            del entry['route_gpx']
+            del entry['route_points']
+
+            with open(fullfn + ".json", "w") as f:
+                json.dump(entry, f, indent=4, sort_keys=True)
+
+            return redirect(url_for('routes'))
+        
+    return '''
+    <!doctype html>
+    <title>Upload new File</title>
+    <h1>Upload new File</h1>
+    <form method=post enctype=multipart/form-data>
+      <input type=file name=file>
+      <input type=submit value=Upload>
+    </form>
+    '''

@@ -33,3 +33,6 @@ schema-salad==7.0.20200811075006
 swagger-spec-validator==2.7.3
 swaggerpy==0.2.1
 termcolor==1.1.0
+markupsafe==2.0.1
+itsdangerous==2.0.1
+werkzeug==2.0.3

@@ -66,6 +66,8 @@ spec:
                 secretKeyRef:
                   name: flask-secret-key
                   key: flask-secret-key
+            - name: FLASK_STATIC
+              value: /static
 
       volumes:
         - name: strava-client

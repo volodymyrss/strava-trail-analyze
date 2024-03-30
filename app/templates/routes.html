@@ -15,10 +15,10 @@
           {% for route in routes %}
             <tr>
               <td>{{ route.name }}</td>
-              <td>{{ (0.001*route.distance) | round(1) }}&nbsp;km</td>
-              <td>{{ route.elevation_gain | int }}&nbsp;m</td>
+              <td>{{ (0.001*route.analysis.modes.all.distance_m) | round(1) }}&nbsp;km</td>
+              <td>{{ route.analysis.modes.all.elevation_gain_m | int }}&nbsp;m</td>
               <td>
-                  {{ (route.analysis.total_time_estimate_s / 3600.0) | round(2)}}&nbsp;hr&nbsp;<i style="color:#a0a0a0">({{ (route.estimated_moving_time / 3600.0) | round(2)}}&nbsp;hr)</i>
+                  {{ (route.analysis.total_time_estimate_s / 3600.0) | round(2)}}&nbsp;hr
               </td>
               <td>
                   {{ (route.analysis.total_time_estimate_s / 3600.0 * 700.0) | int }}
