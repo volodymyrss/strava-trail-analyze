@@ -125,8 +125,10 @@ def extract_modes(grade, d_time, d_d3, altitude):
     return S
 
 
-def analyze_route(route, plot=False):
-    lut_merged = load_model()
+def analyze_route(route, plot=False, lut_merged=None):
+    if lut_merged is None:
+        lut_merged = load_model()
+        
     d_N = 2
     N = 3
 
@@ -475,11 +477,7 @@ def estimate_track(d_d3, d_altitude, d_time, ttime, lut, d_N):
             )
         
 
-
-
-
 def produce_lut(gpx):    
-    luts = []
     d_N = 10    
     
     route_points = list(gpx.tracks)[0].segments[0].points
@@ -544,35 +542,35 @@ def produce_lut(gpx):
             )
 
 
-    for mode in 'hist',: #'contour':
-        f, (ax1,ax2)= plt.subplots(1,2,figsize=(9,5))
-        lut_speed_grade = p2d(
-            speed_kph[m],
-            #d_altitude[m]/d_time[m]*3600.,
-            #60./(d_distance[m]/d_time[m]*3600./1000.),
-            #d_distance[m]/d_time[m]*3600./1000.,
-            #d_altitude[m]/d_time[m]*3600.,
-            #d_altitude[m]/d_time[m]*3600,
-            grade[m],
-            mode = mode,
-            x_bins = np.linspace(0, 15, 70),
-            y_bins = np.linspace(-60, 60, 70),
-            #y_bins = np.linspace(-2000, 2000, 70),
-        )
-        
-        luts.append(lut_speed_grade)
-        
-        plt.subplots_adjust(wspace=0)
-        
-        ax1.scatter(latlng[:,1], latlng[:,0], 
-            #c=cm.jet(np.array(streams['velocity_smooth']['data'])/6.),
-            c=cm.jet((
-                np.array(d_altitude*3600)/(1000.)
-                #np.array(streams['altitude']['data'])-320)/(600-320)
-            ),
-        ))
-        
-        # plt.title(activity['name'])
+    # for mode in 'hist',: #'contour':
+    f, (ax1,ax2)= plt.subplots(1,2,figsize=(9,5))
+    lut_speed_grade = p2d(
+        speed_kph[m],
+        #d_altitude[m]/d_time[m]*3600.,
+        #60./(d_distance[m]/d_time[m]*3600./1000.),
+        #d_distance[m]/d_time[m]*3600./1000.,
+        #d_altitude[m]/d_time[m]*3600.,
+        #d_altitude[m]/d_time[m]*3600,
+        grade[m],
+        mode = 'hist',
+        x_bins = np.linspace(0, 15, 70),
+        y_bins = np.linspace(-60, 60, 70),
+        #y_bins = np.linspace(-2000, 2000, 70),
+    )
+    
+    lut_speed_grade
+    
+    plt.subplots_adjust(wspace=0)
+    
+    ax1.scatter(latlng[:,1], latlng[:,0], 
+        #c=cm.jet(np.array(streams['velocity_smooth']['data'])/6.),
+        c=cm.jet((
+            np.array(d_altitude*3600)/(1000.)
+            #np.array(streams['altitude']['data'])-320)/(600-320)
+        ),
+    ))
+    
+    # plt.title(activity['name'])
         
     print("total time", (ttime[-1] - ttime[0])/3600., "hr")
         
@@ -638,3 +636,17 @@ def produce_lut(gpx):
     # #plt.xlabel("pace")
     # #plt.ylabel("grade")
     # #plt.ylabel("VAM")
+    return lut_speed_grade
+
+
+def produce_merged_lut(gpxes, write=False):
+    luts = []
+    for gpx in gpxes:
+        luts.append(produce_lut(gpx))
+        
+    lut_merged = np.sum([l[0] for l in luts], 0), luts[0][1], luts[0][2]
+
+    if write:
+        np.save(open("lut_merged.npy", "wb"), lut_merged)
+
+    return lut_merged
