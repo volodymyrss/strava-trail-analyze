@@ -66,7 +66,7 @@ def speed_estim_for_grade(grade, lut_speed_grade, peak=(0.1, 0.9), plot=False):
 
 def load_model(version="v0"):
     # cache
-    return np.load(open("lut_merged.npy", "rb"), allow_pickle=True)
+    return np.load(open("lut_merged_prod.npy", "rb"), allow_pickle=True)
     
 def extract_modes(grade, d_time, d_d3, altitude):
     N = 3
@@ -128,7 +128,7 @@ def extract_modes(grade, d_time, d_d3, altitude):
 def analyze_route(route, plot=False, lut_merged=None):
     if lut_merged is None:
         lut_merged = load_model()
-        
+
     d_N = 2
     N = 3
 

@@ -155,12 +155,15 @@ def routes():
     athlete_dir = os.path.join(config['data_dir'], athlete['sub'])
     routes = []
 
+    messages = []
+    if message := request.args.get("message", None):
+        messages.append(message)
     
     for route in glob.glob(f"{athlete_dir}/*.json"):
         with open(route, "r") as f:
             routes.append(json.load(f))
 
-    return render_template("routes.html", user_name=athlete['name'], routes=routes)
+    return render_template("routes.html", user_name=athlete['name'], routes=routes, messages=messages)
 
 
 def get_auth_url():
@@ -221,12 +224,21 @@ def get_image(fractions):
     return response
 
 
-@app.route("/clear-cache")
+@app.route("/recompute")
 def clear_cache():
-    requests_cache.clear()
-    athlete_activity_cache.clear()
-    athlete_cache.clear()
-    flash("cache cleared!")
+    # requests_cache.clear()
+    # athlete_activity_cache.clear()
+    # athlete_cache.clear()
+
+    config = read_conf()
+
+    athlete = get_athlete()
+    athlete_dir = os.path.join(config['data_dir'], athlete['sub'])
+
+    for gpxfn in glob.glob(f"{athlete_dir}/*.gpx"):        
+        gpx_to_entry(gpxfn)
+    
+    flash("cache cleared!")    
     return redirect(url_for("root"))
 
 @app.route("/logout")
@@ -238,65 +250,81 @@ def logout():
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
+    config = read_conf()
+    athlete = get_athlete()
+
     if request.method == 'POST':
-        # check if the post request has the file part
+        print("post file upload")
+
+        print("request.files", request.files)
+        
         if 'file' not in request.files:
+            print("no file part")
             flash('No file part')
             return redirect(request.url)
         file = request.files['file']
 
-        config = read_conf()
-        athlete = get_athlete()
         athlete_dir = os.path.join(config['data_dir'], athlete['sub'])
         os.makedirs(athlete_dir, exist_ok=True)
         
         if file.filename == '':
+            print("no selected file")
             flash('No selected file')
             return redirect(request.url)
         
         if not file.filename.endswith(".gpx") and not file.filename.endswith(".GPX"):
+            print("invalid file type")
             flash('Invalid file type')
             return redirect(request.url)
         
         if file:
+            print("saving file")
             filename = secure_filename(file.filename)
             fullfn = os.path.join(athlete_dir, filename)
             file.save(fullfn)
-            gpx = gpxpy.parse(open(fullfn).read())
             
-            print("gpx", gpx)
+            entry = gpx_to_entry(fullfn)
 
-            track = list(gpx.tracks)[0]
-            segment = list(track.segments)[0]
-
-            print("segment", segment)
-
-            entry = {
-                "name": gpx.name,
-                "route_points": segment.points,
-                "route_gpx": gpx,
-                "type": "gpx",
-                "sub_type": "gpx",
-            }
-
-            
-
-            entry['analysis'] =  analyze.analyze_route(entry)
-
-            del entry['route_gpx']
-            del entry['route_points']
-
-            with open(fullfn + ".json", "w") as f:
-                json.dump(entry, f, indent=4, sort_keys=True)
-
-            return redirect(url_for('routes'))
+            return redirect(url_for('routes', message=f"file {entry['name']} uploaded and analysed: {entry}!"))
+    
+        print("problem uploading file", file)
+        return redirect(url_for('routes', message="problem uploading file!"))
         
-    return '''
+    return f'''
     <!doctype html>
     <title>Upload new File</title>
-    <h1>Upload new File</h1>
+    <h1>Upload new File, {athlete['name']}</h1>
     <form method=post enctype=multipart/form-data>
       <input type=file name=file>
       <input type=submit value=Upload>
     </form>
     '''
+
+
+def gpx_to_entry(fullfn):
+    gpx = gpxpy.parse(open(fullfn).read())
+            
+    print("gpx", gpx)
+
+    track = list(gpx.tracks)[0]
+    segment = list(track.segments)[0]
+
+    print("segment", segment)
+
+    entry = {
+        "name": gpx.name,
+        "route_points": segment.points,
+        "route_gpx": gpx,
+        "type": "gpx",
+        "sub_type": "gpx",
+    }    
+
+    entry['analysis'] =  analyze.analyze_route(entry)
+
+    del entry['route_gpx']
+    del entry['route_points']
+
+    with open(fullfn + ".json", "w") as f:
+        json.dump(entry, f, indent=4, sort_keys=True)
+
+    return entry
