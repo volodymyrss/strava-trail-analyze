@@ -19,7 +19,7 @@ listen:
 	FLASK_TEMPLATES=$(shell pwd)/app/templates \
 	FLASK_STATIC=$(shell pwd)/app/static \
 	FLASK_SECRET_KEY=$(shell openssl rand -base64 32) \
-			FLASK_APP=trailsapp:app flask run -h 127.0.0.1 -p 8000 --debugger --reload
+			FLASK_APP=trailsapp:app flask run -h 127.0.0.1 -p 8000 --debugger 
 			#gunicorn trailsapp:app -b 0.0.0.0:8000 --log-level debug
 
 up: push

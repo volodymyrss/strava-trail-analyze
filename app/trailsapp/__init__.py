@@ -148,6 +148,9 @@ def root():
 def routes():
     athlete = get_athlete()
 
+    types = request.args.get("types", "running,trail_running,hiking").split(",")
+    kinds = request.args.get("kinds", "plan").split(",")
+
     print("athlete", athlete)
     
     config = read_conf() 
@@ -161,7 +164,19 @@ def routes():
     
     for route in glob.glob(f"{athlete_dir}/*.json"):
         with open(route, "r") as f:
-            routes.append(json.load(f))
+            r = json.load(f)
+            if r['type'] not in types and "types" != ["all"]:
+                continue
+
+            if r['duration_hr'] is None:
+                kind = "plan"
+            else:
+                kind = "activity"
+            
+            if kind not in kinds and kinds != ["all"]:
+                continue
+
+            routes.append(r)
 
     return render_template("routes.html", user_name=athlete['name'], routes=routes, messages=messages)
 
@@ -218,18 +233,11 @@ def get_image(fractions):
     image_binary = analyze.pngbar(list(map(float, fractions.split(","))))
     response = make_response(image_binary)
     response.headers.set('Content-Type', 'image/png')
- #   response.headers.set(
- #       'Content-Disposition', 'attachment', filename='some.png' 
- #   )
     return response
 
 
 @app.route("/recompute")
 def clear_cache():
-    # requests_cache.clear()
-    # athlete_activity_cache.clear()
-    # athlete_cache.clear()
-
     config = read_conf()
 
     athlete = get_athlete()
@@ -248,57 +256,48 @@ def logout():
     return r
 
 
-@app.route('/upload', methods=['GET', 'POST'])
+@app.route('/upload', methods=['POST'])
 def upload_file():
     config = read_conf()
     athlete = get_athlete()
 
-    if request.method == 'POST':
-        print("post file upload")
+    print("post file upload")
 
-        print("request.files", request.files)
-        
-        if 'file' not in request.files:
-            print("no file part")
-            flash('No file part')
-            return redirect(request.url)
-        file = request.files['file']
-
-        athlete_dir = os.path.join(config['data_dir'], athlete['sub'])
-        os.makedirs(athlete_dir, exist_ok=True)
-        
-        if file.filename == '':
-            print("no selected file")
-            flash('No selected file')
-            return redirect(request.url)
-        
-        if not file.filename.endswith(".gpx") and not file.filename.endswith(".GPX"):
-            print("invalid file type")
-            flash('Invalid file type')
-            return redirect(request.url)
-        
-        if file:
-            print("saving file")
-            filename = secure_filename(file.filename)
-            fullfn = os.path.join(athlete_dir, filename)
-            file.save(fullfn)
-            
-            entry = gpx_to_entry(fullfn)
-
-            return redirect(url_for('routes', message=f"file {entry['name']} uploaded and analysed: {entry}!"))
+    print("request.files", request.files)
     
-        print("problem uploading file", file)
-        return redirect(url_for('routes', message="problem uploading file!"))
+    if 'file' not in request.files:
+        print("no file part")
+        flash('No file part')
+        return redirect(request.url)
+    
+    file = request.files['file']
+
+    athlete_dir = os.path.join(config['data_dir'], athlete['sub'])
+    os.makedirs(athlete_dir, exist_ok=True)
+    
+    if file.filename == '':
+        print("no selected file")
+        flash('No selected file')
+        return redirect(request.url)
+    
+    if not file.filename.endswith(".gpx") and not file.filename.endswith(".GPX"):
+        print("invalid file type")
+        flash('Invalid file type')
+        return redirect(request.url)
+    
+    if file:
+        print("saving file")
+        filename = secure_filename(file.filename)
+        fullfn = os.path.join(athlete_dir, filename)
+        file.save(fullfn)
         
-    return f'''
-    <!doctype html>
-    <title>Upload new File</title>
-    <h1>Upload new File, {athlete['name']}</h1>
-    <form method=post enctype=multipart/form-data>
-      <input type=file name=file>
-      <input type=submit value=Upload>
-    </form>
-    '''
+        entry = gpx_to_entry(fullfn)
+
+        return redirect(url_for('routes', message=f"file {entry['name']} uploaded and analysed: {entry}!"))
+
+    print("problem uploading file", file)
+    return redirect(url_for('routes', message="problem uploading file!"))
+        
 
 
 def gpx_to_entry(fullfn):
@@ -310,14 +309,19 @@ def gpx_to_entry(fullfn):
     segment = list(track.segments)[0]
 
     print("segment", segment)
-
+    
     entry = {
         "name": gpx.name,
         "route_points": segment.points,
         "route_gpx": gpx,
-        "type": "gpx",
         "sub_type": "gpx",
+        "duration_hr": gpx.get_duration()/60/60 if gpx.get_duration() else None,
     }    
+
+    try:
+        entry['type'] = gpx.tracks[0].type
+    except:
+        entry['type'] = gpx.type
 
     entry['analysis'] =  analyze.analyze_route(entry)
 

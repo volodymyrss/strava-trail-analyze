@@ -12,3 +12,5 @@ client.yaml
 athlete-activity-cache/
 athlete-cache/
 kube_config_hetzer.yml
+garmin-data
+garmin-export

@@ -4,6 +4,7 @@
           <thead>
             <tr>
               <th scope="col">name</th>
+              <th scope="col">type</th>
               <th scope="col">D</th>
               <th scope="col">D+&nbsp;gain</th>
               <th scope="col">E[time]</th>
@@ -15,10 +16,16 @@
           {% for route in routes %}
             <tr>
               <td>{{ route.name }}</td>
+              <td>{{ route.type }}</td>
               <td>{{ (0.001*route.analysis.modes.all.distance_m) | round(1) }}&nbsp;km</td>
               <td>{{ route.analysis.modes.all.elevation_gain_m | int }}&nbsp;m</td>
               <td>
                   {{ (route.analysis.total_time_estimate_s / 3600.0) | round(2)}}&nbsp;hr
+                  <span>
+                  {% if route.duration_hr %}
+                  {{ (route.duration_hr) | round(2)}}&nbsp;hr
+                  {% endif %}                  
+                  </span>
               </td>
               <td>
                   {{ (route.analysis.total_time_estimate_s / 3600.0 * 700.0) | int }}
